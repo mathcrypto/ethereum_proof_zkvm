@@ -4,6 +4,9 @@ use methods::{
     ETHEREUM_PROOF_GUEST_ELF, ETHEREUM_PROOF_GUEST_ID
 };
 use risc0_zkvm::{default_prover, ExecutorEnv};
+use crate::models::BlockHeader;
+
+mod models;
 
 fn main() {
     // Initialize tracing. In order to view logs, run `RUST_LOG=info cargo run`
@@ -21,17 +24,30 @@ fn main() {
     // ExecutorEnvBuilder::write().
     // To access this method, you'll need to use ExecutorEnv::builder(), which
     // creates an ExecutorEnvBuilder. When you're done adding input, call
-orEnvBuilder::build().
 
-    // For example:
-    let input: u32 = 15 * u32::pow(2, 27) + 1;
+    // Step #1: Create a sample Ethereum block header.
+    let block_header = BlockHeader {
+        hash: "0x1234567890abcdef".to_string(),
+        parent_hash: "0xabcdef1234567890".to_string(),
+        timestamp: 1631583200,
+        number: 123456,
+        transactions_root: "0xabcdefabcdefabcdef".to_string(),
+    };
+
+
+
+
+    // Step #2: Write the block header to the executor environment.
     let env = ExecutorEnv::builder()
-        .write(&input)
+        .write(&block_header)
         .unwrap()
         .build()
         .unwrap();
 
-    // Obtain the default prover.
+
+    // Obtain the default prover to generate a proof.
+    println!("Generating proof for the block header...");
+
     let prover = default_prover();
 
     // Proof information by proving the specified ELF binary.
@@ -45,8 +61,6 @@ orEnvBuilder::build().
 
     // TODO: Implement code for retrieving receipt journal here.
 
-    // For example:
-    let _output: u32 = receipt.journal.decode().unwrap();
 
     // The receipt was verified at the end of proving, but the below code is an
     // example of how someone else could verify this receipt.
