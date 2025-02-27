@@ -1,1 +1,2 @@
-include!(concat!(env!("OUT_DIR"), "/methods.rs"));
+pub mod models;  // Expose the models module
+

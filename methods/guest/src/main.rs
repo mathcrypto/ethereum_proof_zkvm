@@ -1,12 +1,20 @@
-mod models;
 use risc0_zkvm::guest::env;
 use sha2::{Sha256, Digest as ShaDigest};
 use risc0_zkvm::sha::Digest;
-use crate::models::EthereumBlock;
-fn main() {
-    // TODO: Implement guest code here
+use serde::{Serialize, Deserialize};
+//use methods::models::EthereumBlock; // Import the EthereumBlock from models in methods/src
 
-    // read the Ethereum Block input
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EthereumBlock {
+    pub hash: String,
+    pub parent_hash: String,
+    pub timestamp: u64,
+    pub number: u64,
+    pub transactions_root: String,
+}
+fn main() {
+    // Step 1: read the Ethereum Block input
+    
     let block: EthereumBlock = env::read();
 
     // Step 2: Validate the block hash and convert it to Digest

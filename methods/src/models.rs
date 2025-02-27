@@ -1,4 +1,4 @@
-// methods/src/models.rs
+/* // methods/src/models.rs
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -9,3 +9,4 @@ pub struct EthereumBlock {
     pub number: u64,
     pub transactions_root: String,
 }
+*/

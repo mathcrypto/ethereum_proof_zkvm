@@ -13,8 +13,9 @@ command:
 ```bash
 cargo run
 ```
-
-
+cargo risczero build --manifest-path methods/guest/Cargo.toml
+which generates ELF files
+cargo run --bin host
 
 
 ## Directory Structure
