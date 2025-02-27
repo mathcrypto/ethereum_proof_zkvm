@@ -5,16 +5,19 @@
 };
 */
 
-//use methods::models::EthereumBlock; // Import the EthereumBlock from models in methods/src
 
 
 use risc0_zkvm::{default_prover, ExecutorEnv};
 use sha2::{Sha256, Digest as ShaDigest};
 use risc0_zkvm::sha::Digest;
 use serde::{Serialize, Deserialize};
+use ethers::prelude::*;
+use std::convert::TryInto;
 use hex; 
+use ethers::types::U256;
 
-const ETHEREUM_PROOF_GUEST_ELF: &str = "/Users/amirabouguera/ethereum_proof_zkvm/methods/guest/target/riscv32im-risc0-zkvm-elf/docker/ethereum_proof_guest";
+
+const ETHEREUM_PROOF_GUEST_ELF: &str = "../methods/guest/target/riscv32im-risc0-zkvm-elf/docker/ethereum_proof_guest";
 const ETHEREUM_PROOF_GUEST_ID: &str = "d5ce7284368ae6712ec225d58133e60408b408f1925c38e534b749f568d84e36";
 
 
@@ -22,12 +25,44 @@ const ETHEREUM_PROOF_GUEST_ID: &str = "d5ce7284368ae6712ec225d58133e60408b408f19
 pub struct EthereumBlock {
     pub hash: String,
     pub parent_hash: String,
-    pub timestamp: u64,
-    pub number: u64,
+    pub timestamp: U256,
+    pub number: U64,
     pub transactions_root: String,
 }
 
-fn main() {
+async fn get_ethereum_block() -> Result<EthereumBlock, Box<dyn std::error::Error>> { 
+
+    // Set up Ethereum provider (Infura or other Ethereum node)
+    let provider = Provider::<Http>::try_from("https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID")?;
+
+    // Fetch the latest block
+    let block = provider.get_block(BlockId::Number(BlockNumber::Latest)).await?;
+
+    match block {
+        Some(block) => {
+            let hash = format!("{:?}", block.hash);
+            let parent_hash = block.parent_hash.to_string();
+            let timestamp = block.timestamp;
+            let number = block.number.unwrap_or(U64::zero());  // Default to U64::zero() if None     
+            let transactions_root = block.transactions_root.to_string();
+            Ok(EthereumBlock {
+                hash,
+                parent_hash,
+                timestamp,
+                number,
+                transactions_root,
+            })
+        },
+        None => Err("Block not found".into()),
+    }
+
+}
+                   
+               
+     
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing. In order to view logs, run `RUST_LOG=info cargo run`
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
@@ -45,29 +80,29 @@ fn main() {
     // creates an ExecutorEnvBuilder. When you're done adding input, call
 
     // Step #1: Create a sample Ethereum block header.
-    let ethereum_block = EthereumBlock {
+   /* let ethereum_block = EthereumBlock {
         hash: "0x1234567890abcdef".to_string(),
         parent_hash: "0xabcdef1234567890".to_string(),
         timestamp: 1631583200,
         number: 123456,
         transactions_root: "0xabcdefabcdefabcdef".to_string(),
     };
+    */
+    let ethereum_block = get_ethereum_block().await?;
+    println!("Fetched Ethereum Block {:?}", ethereum_block);
     
 
-
-
-
     // Step #2: Write the block to the executor environment.
+    // The ExecutorEnv is used to define the environment in which the zkVM will execute. 
+   
     let env = ExecutorEnv::builder()
         .write(&ethereum_block)
         .unwrap()
         .build()
         .unwrap();
 
-
+     println!("Generating proof for the block ...");
     // Obtain the default prover to generate a proof.
-    println!("Generating proof for the block ...");
-
     let prover = default_prover();
 
     // Proof information by proving the specified ELF binary.
@@ -98,6 +133,7 @@ fn main() {
     receipt
         .verify(guest_id_digest)
         .unwrap();
+    Ok(())
 
 }
 // Helper function to convert a string into a Digest using SHA256
