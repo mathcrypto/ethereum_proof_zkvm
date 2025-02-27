@@ -2,6 +2,7 @@ use risc0_zkvm::guest::env;
 use sha2::{Sha256, Digest as ShaDigest};
 use risc0_zkvm::sha::Digest;
 use serde::{Serialize, Deserialize};
+
 //use methods::models::EthereumBlock; // Import the EthereumBlock from models in methods/src
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
