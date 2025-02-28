@@ -8,16 +8,45 @@ First, make sure [rustup] is installed. The
 automatically install the correct version.
 
 To build all methods and execute the method within the zkVM, run the following
-command:
+commands:
 
+1. Build the Guest Code
 ```bash
-cargo run
+cd methods/guest
+cargo build --release
 ```
-cargo risczero build --manifest-path methods/guest/Cargo.toml
-which generates ELF files
-cargo build --manifest-path host/Cargo.toml 
-cargo run --bin host
-cargo run --manifest-path host/Cargo.toml
+
+2.  Build the Host Code
+```bash
+cd /host
+cargo build --release
+```
+
+3. Run the Ethereum Proof Generator
+```bash
+# export ETH_PROVIDER_URL="your_ethereum_node_url"
+
+# Run the program
+cargo run --release
+```
+4. Verify the Output
+The program will:
+
+- Connect to Ethereum and fetch the latest block
+- Create a zero-knowledge proof that validates the block
+- Verify the proof against the expected guest ID and saves the proof. 
+
+6. Check the Generated Proof
+```bash
+# List proof files
+ls -la proofs/
+```
+
+You should see a file named ethereum_block_XXXXX_proof.bin where XXXXX is the block number.
+
+
+
+
 
  
 ## zkVM Proof Generation and Verification Flow
