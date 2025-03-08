@@ -1,22 +1,21 @@
 use risc0_zkvm::guest::env;
-use sha2::{Sha256, Digest as ShaDigest};
-use risc0_zkvm::sha::Digest;
+//use risc0_zkvm::sha::Sha256 as Risc0Sha256;
 use serde::{Serialize, Deserialize};
+//use primitive_types::U256;
 
-//use methods::models::EthereumBlock; // Import the EthereumBlock from models in methods/src
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EthereumBlock {
     pub hash: String,
     pub parent_hash: String,
-    pub timestamp: u64,
+    pub timestamp: String,
     pub number: u64,
     pub transactions_root: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockValidationResult {
-    pub block_number: u64,
+    pub block: EthereumBlock,
     pub is_valid_hash: bool,
     pub is_valid_timestamp: bool,
     pub is_valid_structure: bool,
@@ -24,16 +23,14 @@ pub struct BlockValidationResult {
 
 fn main() {
     // Step 1: read the Ethereum Block input
-    
     let block: EthereumBlock = env::read();
+    println!("Guest program received Block: #{}", block.number);
 
-    // Step 2: Validate the block hash and convert it to Digest
+    // Step 2: Validate the block hash
     let is_valid_hash = validate_block_hash(&block);
-    let valid_hash_digest = hash_to_digest(is_valid_hash.to_string());
 
-    // Step 3: Validate the block timestamp and convert it to Digest
-    let is_valid_timestamp = block.timestamp > 0;
-    let valid_timestamp_digest = hash_to_digest(is_valid_timestamp.to_string());
+    // Step 3: Validate the block timestamp
+    let is_valid_timestamp = block.timestamp.starts_with("0x");
     
     // Structure validation (check if all required fields are present)
     let is_valid_structure = !block.hash.is_empty() &&
@@ -41,11 +38,16 @@ fn main() {
                              !block.transactions_root.is_empty();
     
     let validation_result = BlockValidationResult {
-        block_number: block.number,
+        block,
         is_valid_hash,
         is_valid_timestamp,
         is_valid_structure,
     };
+
+    println!("Block validation results:");
+    println!("  Valid hash: {}", is_valid_hash);
+    println!("  Valid timestamp: {}", is_valid_timestamp);
+    println!("  Valid structure: {}", is_valid_structure);
 
     // write public output to the journal
     env::commit(&validation_result);
@@ -55,15 +57,5 @@ fn main() {
 fn validate_block_hash(block: &EthereumBlock) -> bool {
     !block.hash.is_empty() && block.hash.starts_with("0x")
 }
-// Helper function to convert a string into a Digest using SHA256
 
-fn hash_to_digest(input: String) -> Digest {
-    let mut hasher = Sha256::new();
-    hasher.update(input.as_bytes());
-    let result = hasher.finalize();
-    let fixed_size_array: [u8; 32] = result.into();
-    Digest::from(fixed_size_array)
-}
-
-
-
+// Helper function to convert a string into a SHA256 hash
