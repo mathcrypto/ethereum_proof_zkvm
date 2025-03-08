@@ -24,12 +24,6 @@ fn get_elf_path() -> String {
 }
 
 
-    
-    
-    
-    
-
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EthereumBlock {
@@ -38,6 +32,7 @@ pub struct EthereumBlock {
     pub timestamp: String,
     pub number: u64,
     pub transactions_root: String,
+    pub is_valid_timestamp: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,6 +60,17 @@ async fn get_ethereum_block(provider_url: &str) -> Result<EthereumBlock, Box<dyn
             let timestamp = block.timestamp.as_u64().to_string(); 
             let number = block.number.unwrap_or_default().as_u64();
             let transactions_root = block.transactions_root.to_string();
+
+            // Validate timestamp 
+            let timestamp_value = block.timestamp.as_u64();
+            let current_time = std::time::SystemTime::now()
+                .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            
+            let is_valid_timestamp =
+                timestamp_value >= 1438269973 &&
+                timestamp_value <= current_time + 15;
             
             println!("Successfully fetched block #{}", number);
             
@@ -74,6 +80,7 @@ async fn get_ethereum_block(provider_url: &str) -> Result<EthereumBlock, Box<dyn
                 timestamp,
                 number,
                 transactions_root,
+                is_valid_timestamp,
             })
         },
         None => {

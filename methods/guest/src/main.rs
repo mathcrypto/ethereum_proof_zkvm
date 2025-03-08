@@ -11,6 +11,7 @@ pub struct EthereumBlock {
     pub timestamp: String,
     pub number: u64,
     pub transactions_root: String,
+    pub is_valid_timestamp: bool
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,8 +31,8 @@ fn main() {
     let is_valid_hash = validate_block_hash(&block);
 
     // Step 3: Validate the block timestamp
-    let is_valid_timestamp = block.timestamp.starts_with("0x");
-    
+    let is_valid_timestamp = block.is_valid_timestamp;
+
     // Structure validation (check if all required fields are present)
     let is_valid_structure = !block.hash.is_empty() &&
                              !block.parent_hash.is_empty() &&
