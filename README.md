@@ -61,6 +61,9 @@ The project demonstrates a comprehensive zero-knowledge proof workflow:
    * Records and validates the execution session
    * Generates a cryptographic proof (receipt)
 
+**Screenshot of Proof generation**
+
+![Proof Generation Process](docs/screenshots/proof_generation.png)
 
 4. Verify Proof
 
