@@ -155,17 +155,7 @@ fn print_proof_details(prove_info: &ProveInfo, validation_result: &BlockValidati
     let proof_size = to_vec(&prove_info.receipt).unwrap_or_default().len() / 1024;
     println!("Proof Size: {} KB", proof_size);
     
-    // Print the journal (output from the guest program)
-    println!("\nProof Journal:");
-    if let Ok(journal_data) = String::from_utf8(journal_bytes.to_vec()) {
-        println!("{}", journal_data);
-    } else {
-        println!("Journal contains binary data");
-        println!("Journal size: {} bytes", journal_bytes.len());
-    }
     
-    println!("\nProof Verification Status: VALID");
-    println!("======================================\n");
 }
     
 
@@ -229,7 +219,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Step 4: Deserialize the journal to get the validation result
     let validation_result: BlockValidationResult = prove_info.receipt.journal.decode()?;
-    println!("Deserialized validation result: {:?}", validation_result);
 
     // Step 5: Print proof details
     print_proof_details(&prove_info, &validation_result);

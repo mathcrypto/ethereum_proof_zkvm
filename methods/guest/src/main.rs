@@ -45,10 +45,6 @@ fn main() {
         is_valid_structure,
     };
 
-    println!("Block validation results:");
-    println!("  Valid hash: {}", is_valid_hash);
-    println!("  Valid timestamp: {}", is_valid_timestamp);
-    println!("  Valid structure: {}", is_valid_structure);
 
     // write public output to the journal
     env::commit(&validation_result);
