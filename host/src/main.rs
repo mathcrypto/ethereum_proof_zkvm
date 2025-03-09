@@ -1,13 +1,18 @@
 use risc0_zkvm::{default_prover, ExecutorEnv, ProveInfo};
 use serde::{Serialize, Deserialize};
 use risc0_zkvm::serde::to_vec;
+use risc0_zkvm::sha::Digest;
+use risc0_zkvm::Receipt;
 use ethers::prelude::*;
 use std::fs;
 use std::path::Path;
 use hex;
 
-
-const ETHEREUM_PROOF_GUEST_ID: &str = "d5ce7284368ae6712ec225d58133e60408b408f1925c38e534b749f568d84e36";
+#[derive(Serialize, Deserialize, Clone)]
+struct ProofPackage {
+    receipt: Receipt,
+    method_id: String,
+}
 fn get_elf_path() -> String {
     let current_dir = std::env::current_dir().expect("Failed to get current directory");
     println!("Current directory: {}", current_dir.display());
@@ -90,7 +95,21 @@ async fn get_ethereum_block(provider_url: &str) -> Result<EthereumBlock, Box<dyn
     }
 }
 
-fn save_receipt(prove_info: &ProveInfo, block_number: U64) -> Result<String, Box<dyn std::error::Error>> {
+fn calculate_current_method_id() -> Result<Digest, Box<dyn std::error::Error>> {
+    let path_string = get_elf_path();
+    let elf_path = Path::new(&path_string);
+    let elf_data = fs::read(elf_path)?;
+    use sha2::{Sha256, Digest as Sha256Digest};
+    let mut hasher = Sha256::new();
+    hasher.update(&elf_data);
+    let result = hasher.finalize();
+    let bytes: [u8; 32] = result.into();
+    let digest = risc0_zkvm::sha::Digest::from(bytes);
+    println!("Calculated method ID: {:?}", digest);
+    Ok(digest) 
+}
+
+fn save_receipt(prove_info: &ProveInfo, method_id: &Digest, block_number: u64) -> Result<String, Box<dyn std::error::Error>> {
     // Create proofs directory if it doesn't exist
     let proof_dir = Path::new("proofs");
     if !proof_dir.exists() {
@@ -100,16 +119,24 @@ fn save_receipt(prove_info: &ProveInfo, block_number: U64) -> Result<String, Box
     
     // Generate filename with block number
     let filename = format!("proofs/ethereum_block_{}_proof.bin", block_number);
+
+    // Create the proof package with both the receipt and the method ID
+    let package = ProofPackage {
+        receipt: prove_info.receipt.clone(),
+        method_id: hex::encode(method_id.as_bytes()),
+    };
     
-    // Serialize the receipt - FIXED: use prove_info.receipt
-    let receipt_bytes = prove_info.receipt.journal.bytes.to_vec();
+    // Serialize the package
+    let serialized_package = bincode::serialize(&package)?; 
     
     // Save to file
-    fs::write(&filename, &receipt_bytes)?;
+    fs::write(&filename, &serialized_package)?;
     println!("Proof saved to {}", filename);
     
     Ok(filename)
 }
+
+
 
 fn print_proof_details(prove_info: &ProveInfo, validation_result: &BlockValidationResult) {
     println!("\n==== ETHEREUM BLOCK PROOF DETAILS ====");
@@ -139,17 +166,6 @@ fn print_proof_details(prove_info: &ProveInfo, validation_result: &BlockValidati
     
     println!("\nProof Verification Status: VALID");
     println!("======================================\n");
-}
-
-fn get_guest_id_digest() -> Result<risc0_zkvm::sha::Digest, Box<dyn std::error::Error>> {
-    // Decode the hexadecimal string into a byte vector
-    let bytes = hex::decode(ETHEREUM_PROOF_GUEST_ID)?;
-
-    // Convert the byte vector into a fixed-size array of 32 bytes
-    let bytes_array: [u8; 32] = bytes.as_slice().try_into().map_err(|_| "Failed to convert to 32-byte array")?;
-
-    // Convert the byte array into a Digest
-    Ok(risc0_zkvm::sha::Digest::from(bytes_array))
 }
     
 
@@ -218,20 +234,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Step 5: Print proof details
     print_proof_details(&prove_info, &validation_result);
 
-    // Step 6: Save the proof
-    let proof_path = save_receipt(&prove_info, ethereum_block.number.into())?;
-    println!("Proof saved to: {}", proof_path);
+    // Step 6: Calculate the current method ID
+    let method_id = calculate_current_method_id()?;
+    // Step 7: Save the proof
+    let proof_path = save_receipt(&prove_info, &method_id, ethereum_block.number)?;
 
     Ok(())
 }
  
-
-// Helper function to convert a string into a Digest using SHA256
-/*fn hash_to_digest(input: String) -> Digest {
-    let mut hasher = Sha256::new();
-    hasher.update(input.as_bytes());
-    let result = hasher.finalize();
-    let fixed_size_array: [u8; 32] = result.into();
-    Digest::from(fixed_size_array)
-}
-    */

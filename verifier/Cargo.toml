@@ -1,0 +1,10 @@
+[package]
+name = "ethereum_proof_verifier"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+risc0-zkvm = "1.2.5"
+serde = { version = "1.0", features = ["derive"] }
+hex = "0.4"
+bincode = "1.3"
